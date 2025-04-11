@@ -2,10 +2,11 @@ package inits
 
 import (
 	"github.com/joho/godotenv"
-	"github.com/theMitocondria/Unbiass/utils"
+	"log"
 )
 
 func LoadEnv(){
-	err := godotenv.Load()
-	utils.LogError(err,"Error connecting to ENV")
+	if err := godotenv.Load() ; err != nil {
+        log.Fatal(err)
+    }
 }

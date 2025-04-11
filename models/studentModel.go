@@ -9,7 +9,6 @@ type Student struct {
 	Email 			string		`gorm:"not null;size:50" json:"email"`
 	// here "M" for male , "F" for female , "O" for others
 	Gender 			string 		`gorm:"size:1" json:"gender"`
-	MonitoringScore float32		`gorm:"default:0" json:"monitoring_score"`
 	Score 			uint32		`gorm:"default:0" json:"score"`
 	Token 			string  	`gorm:"not null;size:500"`
 	//because of composite key now 70k students being traversed now in 1.5ms almost 10ms to 1.5 ms, especially making this first index and hence only 4 bytes trade of but time almost cut to 4 times minimum

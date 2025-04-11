@@ -18,5 +18,5 @@ func (rs *RankedStudent) BeforeCreate(tx *gorm.DB) (err error) {
 	if err != nil {
 		return err
 	}
-	return
+	return nil
 }

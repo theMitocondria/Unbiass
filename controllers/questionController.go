@@ -56,7 +56,7 @@ func CreateQuestion(ctx *gin.Context){
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": len(question.ID)})
+	ctx.JSON(http.StatusOK, gin.H{"message": 1})
 }
 
 

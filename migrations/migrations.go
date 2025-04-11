@@ -20,4 +20,5 @@ func main(){
 	database.DB.AutoMigrate(&models.Student{})
 	database.DB.AutoMigrate(&models.Testcase{})
 	database.DB.AutoMigrate(&models.RankedStudent{})
+	database.DB.AutoMigrate(&models.Developer{})
 }

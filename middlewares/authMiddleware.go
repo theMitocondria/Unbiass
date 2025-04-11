@@ -22,7 +22,7 @@ func AuthCompany(ctx *gin.Context){
 
 	// Check if the cookie is present
 	if err != nil {
-		ctx.JSON(http.StatusUnauthorized , gin.H{"error" : "Unauthorized"})
+		ctx.JSON(http.StatusUnauthorized , gin.H{"error" : err.Error()})
 		// after below line no further module / middleware will be called
 		ctx.AbortWithStatus(http.StatusUnauthorized)
 		return
@@ -34,16 +34,21 @@ func AuthCompany(ctx *gin.Context){
 			return nil , fmt.Errorf("unexpected sigining method %v" , token.Header["alg"])
 		}
 
-		return []byte(os.Getenv("SECRET")) , nil
+		return []byte(os.Getenv("COMPANY_SECRET")) , nil
 	})
 	
 	// claims is a map of the claims in the token
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		if float64(time.Now().Unix()) > claims["exp"].(float64) {
-			ctx.JSON(http.StatusUnauthorized , gin.H{"error": "unauthorized"})
+		exp, ok := claims["exp"].(float64)
+		if !ok {
 			ctx.AbortWithStatus(http.StatusUnauthorized)
-		 	return
-		} 
+			return
+		}
+
+		if float64(time.Now().Unix()) > exp {
+			ctx.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
 		// now we will take out sub from claims and search for it in company table
 		var company models.Company
 		database.DB.Model(&models.Company{}).Where("id = ?", claims["sub"]).First(&company)
@@ -65,3 +70,61 @@ func AuthCompany(ctx *gin.Context){
 }
 
 
+func AuthAdmin(ctx *gin.Context){
+	// Get the cookie off req
+	tokenString, err := ctx.Cookie("Authorization")
+	// Check if the cookie is present
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized , gin.H{"error" : err.Error()})
+		// after below line no further module / middleware will be called
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	token , err := jwt.Parse(tokenString , func (token *jwt.Token)(interface{} , error){
+		// jwt.SigningMethodHMAC is a type of jwt.SigningMethod which is told to the jwt.Parse function , ok will be false if the token is not a jwt.SigningMethodHMAC
+		if _ , ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil , fmt.Errorf("unexpected sigining method %v" , token.Header["alg"])
+		}
+
+		return []byte(os.Getenv("ADMIN_SECRET")) , nil
+	})
+	
+	// claims is a map of the claims in the token
+	if err != nil || token == nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		exp, ok := claims["exp"].(float64)
+		if !ok {
+			ctx.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		if float64(time.Now().Unix()) > exp {
+			ctx.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		// now we will take out sub from claims and search for it in company table
+		var dev models.Developer
+		database.DB.Model(&models.Developer{}).Where("id = ?", claims["sub"]).First(&dev)
+
+		if dev.ID == "" {
+			ctx.JSON(http.StatusUnauthorized , gin.H{"error": "unauthorized"})
+			ctx.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		// now we will set the company in the context
+		ctx.Set("admin", dev)
+		ctx.Next()
+	}else {
+		ctx.JSON(http.StatusUnauthorized , gin.H{"error": "unauthorized"})
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}		
+}

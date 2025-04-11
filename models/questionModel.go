@@ -17,8 +17,8 @@ type Question struct {
 	Difficulty_rating 	uint32			`gorm:"not null;default:0;index" json:"difficulty_rating"`
 	Language 			string			`gorm:"size:50" json:"language"`
 	// if mcq then only here 4-5 options whatever and last option for answer of that (4 options , 5 one answer)
-	MCQ_Options			pq.StringArray	`gorm:"type:text[]"`
-	ContestID 			string			`gorm:"not null" json:"contest_id"`
+	MCQ_Options			pq.StringArray	`gorm:"type:text[]" json:"options"`
+	ContestID 			string			`gorm:"index"  json:"contest_id"`
 } 	
 
 func (qs *Question) BeforeCreate (tx *gorm.DB) (err error) {

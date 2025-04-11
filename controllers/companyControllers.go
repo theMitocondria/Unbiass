@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"github.com/gin-gonic/gin"
@@ -90,7 +91,15 @@ func LoginCompany(ctx *gin.Context){
 	}
 	
 	// here we are just writing it to headers only
-	ctx.SetCookie("Authorization", "Bearer "+tokenString, 60*60*24*30, "/", "", false, true) 
+	http.SetCookie(ctx.Writer, &http.Cookie{
+		Name:     "Authorization",
+		Value:    fmt.Sprintf("Bearer %s", tokenString),
+		Path:     "/",
+		MaxAge:   86400,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode, // or LaxMode, NoneMode
+	})	
 	ctx.Writer.WriteHeader(http.StatusOK)
 }
 
