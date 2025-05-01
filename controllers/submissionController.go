@@ -31,7 +31,7 @@ func CreateSubmission(Lang string , StudentID string , QuestionID string , Verdi
 		return results.Error
 	}
 
-	if err := awsHandler.UploadContentToS3(fmt.Sprintf(submission.ID + ".txt") , Code, "unbiass") ; err != nil {
+	if err := awsHandler.UploadContentToS3(fmt.Sprintf(submission.ID + ".txt") , Code, "unbiasss") ; err != nil {
 		return err
 	}
 

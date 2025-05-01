@@ -95,7 +95,7 @@ func EndTest(ctx *gin.Context){
 						}
 			
 			for _,sub := range Submissions {
-				if err := awsHandler.DeleteContentFromS3("unbiass",sub.ID) ; err!=nil{
+				if err := awsHandler.DeleteContentFromS3("unbiasss",sub.ID) ; err!=nil{
 					inits.RedisClient.Set(context.Background(),"progress:"+transaction_id,"100",0)
 				}
 				database.DB.Model(&models.Submission{}).Delete(sub.ID)
@@ -183,7 +183,7 @@ func PlagTesting(ctx *gin.Context){
 			// time consuming 200 * 2 seconds minimum
 			filedata := make([]fileData, len(questions))
 			for _ , submission := range curr {
-				code , err := awsHandler.DownloadS3Object("unbiass",fmt.Sprintf("%s.txt",submission.ID))
+				code , err := awsHandler.DownloadS3Object("unbiasss",fmt.Sprintf("%s.txt",submission.ID))
 				if err != nil {
 					inits.RedisClient.Set(bgCtx , "progress:"+transaction_id , fmt.Sprintf("error while aws fetching ", err.Error()), time.Hour*24)
 					return

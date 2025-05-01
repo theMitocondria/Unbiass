@@ -29,7 +29,7 @@ func main(){
 	r.HEAD("/api/v1/admin/logout",middlewares.AuthAdmin , controllers.LogoutAdmin)
 	// company routes
 	r.POST("/api/v1/companies" , controllers.CreateCompany)	
-	r.POST("/api/v1/companies/auth" ,middlewares.AuthCompany, controllers.LoginCompany)
+	r.POST("/api/v1/companies/auth" , controllers.LoginCompany)
 	r.HEAD("/api/v1/companies/logout" , middlewares.AuthCompany , controllers.LogoutCompany)
 	
 	// question routes
@@ -64,6 +64,7 @@ func main(){
 
 	//miscellaneous
 	r.POST("/api/v1/end",controllers.EndTest)
+	r.POST("/api/v1/create-template",controllers.CreateTemplate)
 	
 	//trnasaction
 	r.POST("/api/v1/transactions/:transaction_id",controllers.GetProgress)

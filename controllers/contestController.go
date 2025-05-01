@@ -68,7 +68,7 @@ func CreateContest(ctx *gin.Context){
 		return
 	}
 
-	if err := awsHandler.UploadContentToS3(fmt.Sprintf(contest.ID + ".csv") , content , "unbiass") ; err != nil {
+	if err := awsHandler.UploadContentToS3(fmt.Sprintf(contest.ID + ".csv") , content , "unbiasss") ; err != nil {
 		ctx.JSON(http.StatusInternalServerError , gin.H{"error" : err.Error()})
 		return
 	}

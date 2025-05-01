@@ -9,6 +9,7 @@ import(
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/theMitocondria/Unbiass/models"
 	"github.com/theMitocondria/Unbiass/database"
+	"github.com/theMitocondria/Unbiass/awsHandler"
 )
 
 func CreateAdmin(ctx *gin.Context){
@@ -98,4 +99,43 @@ func LoginAdmin(ctx *gin.Context){
 func LogoutAdmin(ctx *gin.Context){
 	ctx.SetCookie("Authorization", "", -1, "/", "", false, true)
 	ctx.Writer.WriteHeader(http.StatusOK)
+}
+
+func CreateTemplate(ctx *gin.Context){
+	err := awsHandler.CreateSESEmailTemplate(
+		"online-assessment",
+		"You're Invited to the {{contestName}} Assessment!",
+		`Hello {{name}},
+
+		You have been invited to participate in the "{{contestName}}" assessment by {{companyName}}.
+
+		Start Time: {{startTime}}
+		Duration: {{duration}} minutes
+		Assessment Link: {{link}}
+
+		Good luck!
+		`,
+			`<html>
+		<body>
+			<h2>Hello {{name}},</h2>
+			<p>You have been invited to participate in the <strong>{{contestName}}</strong> assessment by <strong>{{companyName}}</strong>.</p>
+			<p><strong>Start Time:</strong> {{startTime}}</p>
+			<p><strong>Duration:</strong> {{duration}} minutes</p>
+			<p><a href="{{link}}">Click here to start the assessment</a></p>
+			<br/>
+			<p>Good luck!</p>
+		</body>
+		</html>`,
+	)
+	
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError , gin.H{
+			"errror": err.Error() ,
+		})
+	}
+
+	ctx.JSON(http.StatusOK , gin.H{
+		"message" : 1 ,
+	})
+	
 }

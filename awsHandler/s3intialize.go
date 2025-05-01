@@ -12,7 +12,7 @@ func InitializeAWS() error {
 	sess , err := session.NewSessionWithOptions(session.Options{
 		Profile : "default",
 		Config : aws.Config {
-			Region : aws.String("ap-south-1"),
+			Region : aws.String("eu-north-1"),
 		},
 	})
 

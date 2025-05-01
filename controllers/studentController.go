@@ -69,14 +69,28 @@ func createStudent(fields []string , contestID string ,  StartTime time.Time , E
 	return student , nil
 }
 
+func IntToChar(n int) rune {
+	switch {
+	case n >= 0 && n < 26:
+		return rune('A' + n)
+	case n >= 26 && n < 52:
+		return rune('a' + (n - 26))
+	default:
+		return rune('a')
+	}
+}
+
 func sendMails(students []models.Student , result result , contestID string)[]error{
 	recipients := []awsHandler.EmailRecipient{}
+	position := strings.ReplaceAll(result.ContestName, " ", "-")
+	hour := result.StartTime.Hour()
+	minute:= result.StartTime.Minute()
 	for _, student := range students {
 		recipient := awsHandler.EmailRecipient{
 			Email : student.Email,
 			TemplateData: map[string]interface{}{
 				"name": student.Name,
-				"link" : fmt.Sprintf("www.unbiass.com/students/%s",contestID,student.ID),
+				"link" : fmt.Sprintf("www.unbiass.com/companies/%s-%s/students/%s%c%c/auth",result.CompanyName,position,student.ID,IntToChar(hour),IntToChar(minute)),
 				"duration" : result.Duration ,
 				"companyName" : result.CompanyName,
 				"startTime" : result.StartTime,
@@ -86,7 +100,7 @@ func sendMails(students []models.Student , result result , contestID string)[]er
 		recipients = append(recipients,recipient)
 	}
 
-	err := awsHandler.SendBulk("OnlineAssessmentInvite", "crossstack@gmail.com", recipients) 
+	err := awsHandler.SendBulk("online-assessment", "dhruvmehta382@gmail.com", recipients) 
 	if len(err) > 0 {
 		return err
 	}
@@ -103,14 +117,14 @@ func CreateStudentsFromCSVFromContestIDAndSendMail(ctx *gin.Context) {
 			ctx.JSON(http.StatusInternalServerError , gin.H{"error":fmt.Sprintf("error in searching the contests %s" , err.Error())})
 			return
 		}
-
+    // result.start_time ke hour or minute ko nikalna 
 	// check if contest has started
 	if time.Now().After(result.StartTime) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Contest is already started"})
 		return
 	}
 
-	data , err := awsHandler.DownloadS3Object("unbiass",contestID + ".csv")
+	data , err := awsHandler.DownloadS3Object("unbiasss",contestID + ".csv")
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
