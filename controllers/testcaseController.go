@@ -39,7 +39,7 @@ func CreateTestcase(ctx *gin.Context){
 		return
 	}
 
-	if err := awsHandler.UploadContentToS3(fmt.Sprintf(testcase.ID + ".json") , string(bytes) , "unbiass") ; err != nil {
+	if err := awsHandler.UploadContentToS3(fmt.Sprintf(testcase.ID + ".json") , string(bytes) , "unbiasss") ; err != nil {
 		ctx.JSON(http.StatusInternalServerError , gin.H{"error" : err.Error()})
 		return
 	}
@@ -64,7 +64,7 @@ func GetTestcaseByQuestionIDAndType(ctx *gin.Context){
     }
 
 	
-	body , err := awsHandler.DownloadS3Object("unbiass",fmt.Sprintf(testcase.ID + ".json")) 
+	body , err := awsHandler.DownloadS3Object("unbiasss",fmt.Sprintf(testcase.ID + ".json")) 
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError , gin.H{"error" : err.Error()})
 		return
@@ -84,7 +84,7 @@ func DeleteTestcaseByQuestionID(questionID string) error {
 	var testcases []models.Testcase
 	database.DB.Model(&models.Testcase{}).Where("question_id = ?", questionID).Find(&testcases)
 	for _, testcase := range testcases {
-		if err := awsHandler.DeleteContentFromS3("unbiass", fmt.Sprintf(testcase.ID + ".json")) ; err != nil {
+		if err := awsHandler.DeleteContentFromS3("unbiasss", fmt.Sprintf(testcase.ID + ".json")) ; err != nil {
 			return err
 		}
 	}
@@ -102,7 +102,7 @@ func GetTestcaseData(Type string , QuestionID string)([]interface{} , error){
     }
 
 	// fmt.Println(testcase.ID)
-	body , err := awsHandler.DownloadS3Object("unbiass",fmt.Sprintf(testcase.ID + ".json")) 
+	body , err := awsHandler.DownloadS3Object("unbiasss",fmt.Sprintf(testcase.ID + ".json")) 
 	if err != nil {
 		return nil ,  err
 	}	

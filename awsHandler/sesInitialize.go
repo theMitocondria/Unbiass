@@ -10,7 +10,7 @@ import (
 var svc *ses.SES
 func InitializeSESService() error {
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("ap-south-1"), // Replace with your region
+		Region: aws.String("eu-north-1"), // Replace with your region
 	})
 	if err != nil {
 		return fmt.Errorf("error creating session: %v", err)

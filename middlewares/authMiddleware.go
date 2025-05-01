@@ -74,6 +74,7 @@ func AuthAdmin(ctx *gin.Context){
 	// Get the cookie off req
 	tokenString, err := ctx.Cookie("Authorization")
 	// Check if the cookie is present
+	fmt.Println(tokenString)
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized , gin.H{"error" : err.Error()})
 		// after below line no further module / middleware will be called
@@ -89,7 +90,7 @@ func AuthAdmin(ctx *gin.Context){
 
 		return []byte(os.Getenv("ADMIN_SECRET")) , nil
 	})
-	
+	fmt.Println(token)
 	// claims is a map of the claims in the token
 	if err != nil || token == nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})

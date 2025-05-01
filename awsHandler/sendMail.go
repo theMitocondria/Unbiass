@@ -82,7 +82,6 @@ func (s *BulkEmailSender) SendSingleEmail(recipient EmailRecipient) error {
     if err != nil {
         return fmt.Errorf("failed to marshal template data: %v", err)
     }
-
     input := &ses.SendTemplatedEmailInput{
         Destination: &ses.Destination{
             ToAddresses: []*string{aws.String(recipient.Email)},
@@ -92,7 +91,8 @@ func (s *BulkEmailSender) SendSingleEmail(recipient EmailRecipient) error {
         TemplateData: aws.String(string(templateData)),
     }
 
-    _, err = s.svc.SendTemplatedEmail(input)
+    rec, err := s.svc.SendTemplatedEmail(input)
+    fmt.Println(rec)
     return err
 }
 
