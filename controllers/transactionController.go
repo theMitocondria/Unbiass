@@ -1,6 +1,7 @@
 package controllers
 
 import(
+    "fmt"
 	"context"
 	"net/http"
 	"github.com/gin-gonic/gin"
@@ -9,10 +10,12 @@ import(
 func GetProgress(ctx *gin.Context) {
 	
     jobID := ctx.Param("transaction_id")
+   
     progress, err := inits.RedisClient.Get(context.Background(), "progress:"+jobID).Result()
     if err != nil {
-        ctx.JSON(http.StatusNotFound, gin.H{"error": "Job ID not found"})
+        fmt.Println(err)
+        ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
         return
     }
-    ctx.JSON(http.StatusOK, gin.H{"job_id": jobID, "progress": progress})
+    ctx.JSON(http.StatusOK, progress)
 }

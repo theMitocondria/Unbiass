@@ -6,7 +6,7 @@ import (
     "sync"
 	"time"
     "errors"
-    "strconv"
+    // "strconv"
     "net/http"
     "context"
     "encoding/json"
@@ -61,6 +61,7 @@ func SubmitSubmission(ctx *gin.Context){
     }
 
     if err:= ctx.ShouldBindJSON(&Body) ; err != nil {
+        fmt.Println(err.Error())
         ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
         return
     }
@@ -89,8 +90,8 @@ func SubmitSubmission(ctx *gin.Context){
 
         var wg sync.WaitGroup
         errChan := make (chan ErrChanResponse, 1 )
-        totaltestCase := len(content)
-        completedTestCase := 0
+        // totaltestCase := len(content)
+        // completedTestCase := 0
         var mu sync.Mutex
         var stopProcessing bool
         // step2 each time make a call to compile with command
@@ -142,14 +143,14 @@ func SubmitSubmission(ctx *gin.Context){
                     return
                 }
 
-                mu.Lock()
-                if !stopProcessing {
-                    completedTestCase++
-                    progress := float64(completedTestCase) / float64(totaltestCase) * 100
-                    inits.RedisClient.Set(ctx, "progress:"+transaction_id, 
-                        strconv.FormatFloat(progress, 'f', 2, 64), time.Hour * 24)
-                }
-                mu.Unlock()
+                // mu.Lock()
+                // if !stopProcessing {
+                //     completedTestCase++
+                //     progress := float64(completedTestCase) / float64(totaltestCase) * 100
+                //     inits.RedisClient.Set(ctx, "progress:"+transaction_id, 
+                //         strconv.FormatFloat(progress, 'f', 2, 64), time.Hour * 24)
+                // }
+                // mu.Unlock()
             }(curr)
 
         }
@@ -210,6 +211,8 @@ func SubmitSubmission(ctx *gin.Context){
     }()
     
 }
+
+
 
 func SystemTesting(ctx *gin.Context){
 	contestID := ctx.Param("contestid")
@@ -295,7 +298,7 @@ func SystemTesting(ctx *gin.Context){
                         }
                         mu.Unlock()
 
-                        body, err := awsHandler.DownloadS3Object("unbiass", fmt.Sprintf(submission.ID+".txt"))
+                        body, err := awsHandler.DownloadS3Object("unbiasss", fmt.Sprintf(submission.ID+".txt"))
                         if err != nil {
                             mu.Lock()
                             if !stopProcessing {
@@ -380,4 +383,94 @@ func SystemTesting(ctx *gin.Context){
 
         inits.RedisClient.Set(bgCtx, "progress:"+transaction_id, "Completed", time.Hour*24)
     }()
+}
+
+
+
+func SubmitSubmissionWithoutRedis(ctx *gin.Context) {
+    var Body struct {
+        QuestionID string `json:"question_id" binding:"required"`
+        Code       string `json:"code" binding:"required"`
+        Type       string `json:"type" binding:"required"`
+        Lang       string `json:"lang" binding:"required"`
+        StudentID  string `json:"student_id" binding:"required"`
+    }
+
+    if err := ctx.ShouldBindJSON(&Body); err != nil {
+        ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    testcases, err := GetTestcaseData(Body.Type, Body.QuestionID)
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch testcases"})
+        return
+    }
+
+    var wg sync.WaitGroup
+    resultChan := make(chan string, 1) // will return only one final result
+    done := make(chan struct{})
+    var once sync.Once
+
+    for _, tc := range testcases {
+        wg.Add(1)
+        go func(tc interface{}) {
+            defer wg.Done()
+
+            input := tc.(map[string]interface{})["input"].(string)
+            expected := tc.(map[string]interface{})["output"].(string)
+
+            outputBytes, err := utils.CompileCode(Body.Code, Body.Lang, input)
+            if err != nil {
+                once.Do(func() {
+                    CreateSubmission(Body.Lang, Body.StudentID, Body.QuestionID, models.CompilationError, Body.Code)
+                    resultChan <- "Compilation Error"
+                })
+                return
+            }
+
+            var response CompileResponse
+            if err := json.Unmarshal(outputBytes, &response); err != nil || response.Error != "" {
+                once.Do(func() {
+                    CreateSubmission(Body.Lang, Body.StudentID, Body.QuestionID, models.CompilationError, Body.Code)
+                    resultChan <- "Compilation Error"
+                })
+                return
+            }
+
+            if utils.CleanString(response.Output.CodeOutput) != utils.CleanString(expected) {
+                once.Do(func() {
+                    CreateSubmission(Body.Lang, Body.StudentID, Body.QuestionID, models.WrongAnswer, Body.Code)
+                    resultChan <- "Wrong Answer"
+                })
+                return
+            }
+        }(tc)
+    }
+
+    // Close the done channel after all goroutines complete
+    go func() {
+        wg.Wait()
+        close(done)
+    }()
+
+    // Wait for either an error from a test or all passing
+    select {
+    case status := <-resultChan:
+        ctx.JSON(http.StatusOK, gin.H{"status": status})
+        return
+    case <-done:
+        // All tests passed
+        _ = CreateSubmission(Body.Lang, Body.StudentID, Body.QuestionID, models.PretestsPassed, Body.Code)
+
+        if !CheckStudentQuestionPassedOrNot(Body.StudentID, Body.QuestionID) {
+            var student models.Student
+            if err := database.DB.Model(&models.Student{}).Where("id=?", Body.StudentID).First(&student).Error; err == nil {
+                database.DB.Model(&models.Student{}).Where("id=?", Body.StudentID).Update("score", student.Score+10)
+            }
+        }
+
+        ctx.JSON(http.StatusOK, gin.H{"status": "Pretests Passed"})
+        return
+    }
 }

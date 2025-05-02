@@ -13,7 +13,7 @@ import(
 
 func CreateTestcase(ctx *gin.Context){
 	var body struct {
-		Type string `json:"type" binding:"required,oneof=s p t"`
+		Type string `json:"type" binding:"required,oneof=s p g"`
 		QuestionID string `json:"question_id" binding:"required"`
 		Body []interface{} `json:"body" binding:"required"`
 	}
@@ -76,7 +76,7 @@ func GetTestcaseByQuestionIDAndType(ctx *gin.Context){
         return
     }
 
-    ctx.JSON(http.StatusOK, gin.H{"data": testcases})
+    ctx.JSON(http.StatusOK, gin.H{"message": testcases})
 
 }
 

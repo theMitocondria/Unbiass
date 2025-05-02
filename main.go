@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/gin-contrib/cors"
 	"github.com/theMitocondria/Unbiass/inits"
 	"github.com/theMitocondria/Unbiass/database"
 	"github.com/theMitocondria/Unbiass/controllers"
@@ -21,7 +22,15 @@ func init(){
 }
 func main(){
 
-	r:= gin.Default()
+	r := gin.Default()
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173", "https://unbiass.com"}, // adjust for your frontend
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Authorization", "Content-Type"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}))
+
 
 	// dev routes
 	r.POST("/api/v1/admin",controllers.CreateAdmin)
@@ -56,17 +65,17 @@ func main(){
 
 	//submission routes
 	r.POST("/api/v1/submissions/compile" , controllers.CompileSubmission)
-	r.POST("/api/v1/submissions/submit" , controllers.SubmitSubmission)
+	r.POST("/api/v1/submissions/submit" , controllers.SubmitSubmissionWithoutRedis)
 	r.POST("/api/v1/submissions/system/:contestid" ,middlewares.AuthAdmin, controllers.SystemTesting)
 	r.POST("/api/v1/submissions/mcq/:contestid" , middlewares.AuthAdmin ,controllers.MCQSubmissionTesting)
 	r.POST("/api/v1/submissions/plag/:contestid" ,middlewares.AuthAdmin, controllers.PlagTesting)
-	
-
+	r.GET("/api/v1/submissions/students/:studentid/questions/:questionid",controllers.GetSubmissionsBYQuestionIDAndStudentID)
+	r.GET("/api/v1/submissions/:submissionid",controllers.GetSubmissionCodeByID)
 	//miscellaneous
 	r.POST("/api/v1/end",controllers.EndTest)
 	r.POST("/api/v1/create-template",controllers.CreateTemplate)
 	
 	//trnasaction
-	r.POST("/api/v1/transactions/:transaction_id",controllers.GetProgress)
+	r.GET("/api/v1/transactions/:transaction_id",controllers.GetProgress)
 	r.Run()
 }

@@ -9,6 +9,7 @@ import (
 
 var svc *ses.SES
 func InitializeSESService() error {
+	
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String("eu-north-1"), // Replace with your region
 	})
