@@ -73,5 +73,5 @@ func CreateContest(ctx *gin.Context){
 		return
 	}
 
-	ctx.JSON(http.StatusOK , gin.H{"message" : "contest created"})
+	ctx.JSON(http.StatusOK , gin.H{"message" : contest.ID})
 }

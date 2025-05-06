@@ -91,8 +91,7 @@ func (s *BulkEmailSender) SendSingleEmail(recipient EmailRecipient) error {
         TemplateData: aws.String(string(templateData)),
     }
 
-    rec, err := s.svc.SendTemplatedEmail(input)
-    fmt.Println(rec)
+    _, err = s.svc.SendTemplatedEmail(input)
     return err
 }
 
