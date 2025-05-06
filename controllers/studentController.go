@@ -92,7 +92,7 @@ func sendMails(students []models.Student , result result , contestID string)[]er
 			Email : student.Email,
 			TemplateData: map[string]interface{}{
 				"name": student.Name,
-				"link" : fmt.Sprintf("www.unbiass.com/companies/%s-%s/students/%s%c%c/auth",result.CompanyName,position,student.ID,IntToChar(hour),IntToChar(minute),IntToChar(endHour),IntToChar(endMinute)),
+				"link" : fmt.Sprintf("https://unbiass.com/app/companies/%s-%s/students/%s%c%c%c%c/auth",result.CompanyName,position,student.ID,IntToChar(hour),IntToChar(minute),IntToChar(endHour),IntToChar(endMinute)),
 				"duration" : result.Duration ,
 				"companyName" : result.CompanyName,
 				"startTime" : result.StartTime,
