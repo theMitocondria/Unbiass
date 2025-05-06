@@ -163,13 +163,17 @@ func AuthStudentInfo(ctx *gin.Context){
 
 	//check if there is a student like that
 	var student models.Student 
-	database.DB.Model(&models.Student{}).Select("token , id, contest_id").Where("id=?",studentID).First(&student)
+	database.DB.Model(&models.Student{}).Select("token , id, contest_id").Where("id=? and has_logged_in_once=false",studentID).First(&student)
 
 	if student.ID == "" {
-		ctx.JSON(http.StatusBadRequest,gin.H{"error":"Not a valid candidate"})
+		ctx.JSON(http.StatusBadRequest,gin.H{"error":"Not a valid candidate or you have loggedin before"})
 		return
 	}
 
+	if err := database.DB.Model(&models.Student{}).Where("id=?",student.ID).Update("has_logged_in_once",true).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError,gin.H{"error":err.Error()})
+		return
+	}
 	ctx.SetCookie("Authorization", "Bearer "+ student.Token, 60*120, "/", "", false, true)  // for 2 hours 
 	ctx.JSON(http.StatusOK , gin.H{
 		"message":student.ContestID,
