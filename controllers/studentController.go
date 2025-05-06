@@ -85,12 +85,14 @@ func sendMails(students []models.Student , result result , contestID string)[]er
 	position := strings.ReplaceAll(result.ContestName, " ", "-")
 	hour := result.StartTime.Hour()
 	minute:= result.StartTime.Minute()
+	endHour := result.EndTime.Hour()
+	endMinute:= result.EndTime.Minute()
 	for _, student := range students {
 		recipient := awsHandler.EmailRecipient{
 			Email : student.Email,
 			TemplateData: map[string]interface{}{
 				"name": student.Name,
-				"link" : fmt.Sprintf("www.unbiass.com/companies/%s-%s/students/%s%c%c/auth",result.CompanyName,position,student.ID,IntToChar(hour),IntToChar(minute)),
+				"link" : fmt.Sprintf("www.unbiass.com/companies/%s-%s/students/%s%c%c/auth",result.CompanyName,position,student.ID,IntToChar(hour),IntToChar(minute),IntToChar(endHour),IntToChar(endMinute)),
 				"duration" : result.Duration ,
 				"companyName" : result.CompanyName,
 				"startTime" : result.StartTime,
@@ -161,16 +163,17 @@ func AuthStudentInfo(ctx *gin.Context){
 
 	//check if there is a student like that
 	var student models.Student 
-	database.DB.Model(&models.Student{}).Select("token , id").Where("id=?",studentID).First(&student)
+	database.DB.Model(&models.Student{}).Select("token , id, contest_id").Where("id=?",studentID).First(&student)
 
 	if student.ID == "" {
 		ctx.JSON(http.StatusBadRequest,gin.H{"error":"Not a valid candidate"})
 		return
 	}
 
-	// here we are just writing it to headers only
 	ctx.SetCookie("Authorization", "Bearer "+ student.Token, 60*120, "/", "", false, true)  // for 2 hours 
-	ctx.Writer.WriteHeader(http.StatusOK)
+	ctx.JSON(http.StatusOK , gin.H{
+		"message":student.ContestID,
+	})
 }
 
 // l

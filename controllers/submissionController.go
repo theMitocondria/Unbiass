@@ -4,10 +4,12 @@ import(
 	"os"
 	"fmt"
 	"time"
+	"net/http"
 	"github.com/theMitocondria/slimuuid"
 	"github.com/theMitocondria/Unbiass/awsHandler"
 	"github.com/theMitocondria/Unbiass/models"
 	"github.com/theMitocondria/Unbiass/database"
+	"github.com/gin-gonic/gin"
 )
 func CreateSubmission(Lang string , StudentID string , QuestionID string , Verdict models.Verdict , Code string)error{
     MAC_ADDRESS := os.Getenv("MAC_ADDRESS")
@@ -63,3 +65,46 @@ func GetSubmissionByQuestionIDAndLIMIT(questionID string ,StudentsRequired uint3
 
 	return submissions , nil
 }
+
+
+func GetSubmissionsBYQuestionIDAndStudentID(ctx *gin.Context) {
+	var questionid = ctx.Param("questionid")
+	var studentid = ctx.Param("studentid")
+
+	if questionid == "" || studentid == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "fields empty"})
+		return
+	}
+
+	var Submissions []models.Submission
+	if err := database.DB.Model(&models.Submission{}).Where("student_id=? AND question_id=?", studentid, questionid).Find(&Submissions).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": Submissions})
+}
+
+func GetSubmissionCodeByID(ctx *gin.Context){
+	id := ctx.Param("submissionid")
+	if(id == ""){
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "fields empty"})
+		return
+	}	
+
+	var Submission models.Submission
+	if err := database.DB.Model(&models.Submission{}).Where("id=?", id).Find(&Submission).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	body, err := awsHandler.DownloadS3Object("unbiasss", fmt.Sprintf(id+".txt"))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": string(body) , "submission":Submission})
+		
+}
+
