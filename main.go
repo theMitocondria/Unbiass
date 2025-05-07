@@ -77,5 +77,9 @@ func main(){
 	
 	//trnasaction
 	r.GET("/api/v1/transactions/:transaction_id",controllers.GetProgress)
+
+	//bugs and feedback
+	r.POST("/api/v1/feedback",controllers.CreateFeedback)
+	r.POST("/api/v1/bug",controllers.CreateBug)
 	r.Run()
 }

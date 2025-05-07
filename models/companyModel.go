@@ -1,15 +1,11 @@
 package models
 
-import (	
+import (
+	"os"	
 	"gorm.io/gorm"
 	"github.com/theMitocondria/slimuuid"
-	"github.com/theMitocondria/Unbiass/inits"
-	"os"
-)
 
-func init(){
-	inits.LoadEnv()
-}
+)
 
 type Company struct {
 	ID          string      `gorm:"primaryKey" json:"id"`
