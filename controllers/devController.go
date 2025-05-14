@@ -3,6 +3,7 @@ package controllers
 import(
 	"os"
 	"time"
+	"fmt"
 	"net/http"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -60,7 +61,8 @@ func LoginAdmin(ctx *gin.Context){
 	}
 
 	var Dev models.Developer
-	database.DB.Model(&models.Developer{}).Where("email=?",body.Email).Find(&Dev)
+	database.DB.Model(&models.Developer{}).Where("email=?",body.Email).First(&Dev)
+	fmt.Println("Dev", Dev)
 	if Dev.ID == "" {
 		ctx.JSON(http.StatusBadRequest , gin.H{"error":"Wrong Email or Password"})
 		return
@@ -68,7 +70,7 @@ func LoginAdmin(ctx *gin.Context){
 
 	err := bcrypt.CompareHashAndPassword([]byte(Dev.Password) , []byte(body.Password))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest , gin.H{"error":"Wrong Email or Password"})
+		ctx.JSON(http.StatusBadRequest , gin.H{"error":err.Error()})
 		return
 	}
 

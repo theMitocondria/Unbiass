@@ -170,10 +170,10 @@ func AuthStudentInfo(ctx *gin.Context){
 		return
 	}
 
-	if err := database.DB.Model(&models.Student{}).Where("id=?",student.ID).Update("has_logged_in_once",true).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError,gin.H{"error":err.Error()})
-		return
-	}
+	// if err := database.DB.Model(&models.Student{}).Where("id=?",student.ID).Update("has_logged_in_once",true).Error; err != nil {
+	// 	ctx.JSON(http.StatusInternalServerError,gin.H{"error":err.Error()})
+	// 	return
+	// }
 	ctx.SetCookie("Authorization", "Bearer "+ student.Token, 60*120, "/", "", false, true)  // for 2 hours 
 	ctx.JSON(http.StatusOK , gin.H{
 		"message":student.ContestID,
