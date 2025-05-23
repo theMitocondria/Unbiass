@@ -14,7 +14,7 @@ func init(){
 	//used for loading envs in the code
 	// inits.LoadEnv()
 	inits.InitHTTPClient()
-	inits.Redis()
+	// inits.Redis()
 	database.DBInit()
 	awsHandler.InitializeAWS()
 	awsHandler.CreateBucket("unbiass")
