@@ -14,5 +14,5 @@ WORKDIR /app
 COPY --from=builder /app/main .
 
 # Set environment variables via Docker, not .env file directly
-EXPOSE 3000 
+EXPOSE 4000 
 ENTRYPOINT ["./main"]
