@@ -36,7 +36,7 @@ type ErrChanResponse struct {
 func CompileSubmission(ctx *gin.Context) {
 
     // Create request with raw body
-    resp, err := utils.SendRequest("POST" ,"http://localhost:3000/api/v1/compile",ctx.Request.Body)
+    resp, err := utils.SendRequest("POST" ,"https://compiler.unbiass.com/api/v1/compile",ctx.Request.Body)
     if err != nil {
         ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
         return

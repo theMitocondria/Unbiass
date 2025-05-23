@@ -36,9 +36,9 @@ func MCQSubmissionCreation(studentID string , answers []answer , transaction_id 
         McqAnswers = append(McqAnswers,McqAnswer)
         progress := float64(index)/float64(len(McqAnswers)) * 100
 
-        if int(progress) % 10 == 0 {
-            inits.RedisClient.Set(context.Background(),"progress:"+transaction_id,progress,0)
-        }
+        // if int(progress) % 10 == 0 {
+        //     inits.RedisClient.Set(context.Background(),"progress:"+transaction_id,progress,0)
+        // }
     } 
 
     if err := database.DB.Model(&models.McqAnswer{}).Create(&McqAnswers).Error ; err != nil {

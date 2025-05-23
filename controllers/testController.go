@@ -55,7 +55,7 @@ func cleanOutput(str string) []string {
 	}
 	return parts
 }
-func EndTest(ctx *gin.Context){
+func EndTestWithRedis(ctx *gin.Context){
 
 	var body struct{
 		StudentID string `json:"student_id" binding:"required"`
@@ -109,6 +109,55 @@ func EndTest(ctx *gin.Context){
 			inits.RedisClient.Set(context.Background(),"progress:"+transaction_id,fmt.Sprintf("Error %v",err.Error()),time.Hour*24)
 		}
 	}()	
+}
+
+func EndTest(ctx *gin.Context) {
+	var body struct {
+		StudentID string `json:"student_id" binding:"required"`
+		Answers []answer `json:"answers" binding:"required"`
+		FrontendScore int `json:"fs" binding:"required"`
+	}
+
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	//tab switch face detection screen left time resize event check for monitoring 
+	fair, err := frontendMonitoring(body.FrontendScore)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	//cheating ki h to mcq to bnao hi mt or codes jo bhi submit kre h unhe delete krdo
+	if !fair {
+		var Submissions []models.Submission
+		if err := database.DB.Model(&models.Submission{}).
+			Where("student_id=?", body.StudentID).
+			Find(&Submissions).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		
+		for _, sub := range Submissions {
+			if err := awsHandler.DeleteContentFromS3("unbiasss", sub.ID); err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			database.DB.Model(&models.Submission{}).Delete(sub.ID)
+		}
+		ctx.JSON(http.StatusOK, gin.H{"message": "Test ended - Unfair attempt detected"})
+		return
+	}
+
+	//ab hume uske mcqs ko creation ke liye bhjna h
+	if err := MCQSubmissionCreation(body.StudentID, body.Answers, ""); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Test ended successfully"})
 }
 
 func PlagTesting(ctx *gin.Context){
