@@ -123,6 +123,11 @@ func EndTest(ctx *gin.Context) {
 		return
 	}
 
+	if err := database.DB.Model(&models.Student{}).
+		Where("id=?", body.StudentID).
+		Update("has_logged_in_once", true).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})	
+
 	//tab switch face detection screen left time resize event check for monitoring 
 	fair, err := frontendMonitoring(body.FrontendScore)
 	if err != nil {

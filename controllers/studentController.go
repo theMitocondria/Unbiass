@@ -150,11 +150,11 @@ func CreateStudentsFromCSVFromContestIDAndSendMail(ctx *gin.Context) {
 		return
 	}
 	// mails hav been sent but not recieved idk why
-	errors := sendMails(students,result,contestID) 
-	if len(errors) > 0 {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": errors})
-		return
-	}
+	// errors := sendMails(students,result,contestID) 
+	// if len(errors) > 0 {
+	// 	ctx.JSON(http.StatusInternalServerError, gin.H{"error": errors})
+	// 	return
+	// }
 	ctx.JSON(http.StatusOK, gin.H{"message": "Students created successfully"})
 }
 
