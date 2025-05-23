@@ -46,9 +46,9 @@ func createStudent(fields []string , contestID string ,  StartTime time.Time , E
 	var gender string
 	if len(fields[2]) > 1 {
 		switch strings.ToLower(fields[2]) {
-		case "male":
+		case "Male":
 			gender = "M"
-		case "female":
+		case "Female":
 			gender = "F"
 		default:
 			gender = "O"
