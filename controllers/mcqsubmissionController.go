@@ -27,7 +27,7 @@ func MCQSubmissionCreation(studentID string , answers []answer , transaction_id 
     */
 
     var McqAnswers []models.McqAnswer
-    for index,answer := range answers {
+    for _,answer := range answers {
         McqAnswer := models.McqAnswer{
             Answer : answer.Answer ,
             StudentID : studentID ,
