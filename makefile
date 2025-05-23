@@ -1,3 +1,3 @@
 up:
-	CompileDaemon -command="./Unbiass"
-
+	go run main.go 
+	

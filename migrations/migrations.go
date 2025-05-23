@@ -7,7 +7,6 @@ import (
 )
 
 func init(){
-	inits.LoadEnv()
 	database.DBInit()
 }
 

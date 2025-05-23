@@ -9,7 +9,7 @@ import (
 
 type Question struct {
 	ID					string			`gorm:"primaryKey" json:"id"`
-	Name				string			`gorm:"not null;size:50" json:"name"`
+	Name				string			`gorm:"not null;" json:"name"`
 	Description 		string			`gorm:"not null;type:text" json:"description"`
 	// "M" for MCQ , "C" for Code
 	MCQ_OR_Code			string			`gorm:"not null;size:1" json:"mcq_or_code"`
