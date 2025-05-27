@@ -5,11 +5,9 @@ import (
     "fmt"
     "sync"
 	"time"
-    "errors"
-    // "strconv"
     "net/http"
     "context"
-    "encoding/json"
+    "strconv"
     "github.com/gin-gonic/gin"
     "github.com/theMitocondria/slimuuid"
     "github.com/theMitocondria/Unbiass/models" 
@@ -20,13 +18,6 @@ import (
 
 )
 
-type CompileResponse struct {
-    Output struct {
-        CodeOutput string `json:"code_output"`
-        CodeError  string `json:"code_error"`
-    } `json:"output"`
-    Error string `json:"error"`
-}
 
 type ErrChanResponse struct {
     Status int
@@ -35,14 +26,25 @@ type ErrChanResponse struct {
 }
 func CompileSubmission(ctx *gin.Context) {
 
-    // Create request with raw body
-    resp, err := utils.SendRequest("POST" ,"https://compiler.unbiass.com/api/v1/compile",ctx.Request.Body)
+    // Create request with raw body HandleCompile
+    var body struct {
+        Code string `json:"code" binding:"required"`
+        Lang string `json:"lang" binding:"required"`
+        Input string `json:"input" binding:"required"`
+    }
+
+    if err := ctx.ShouldBindJSON(&body); err != nil {
+        ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    resp , err := utils.HandleCompile(body.Code , body.Input , body.Lang)
     if err != nil {
         ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
         return
     }
-    
-    ctx.DataFromReader(resp.StatusCode, resp.ContentLength, resp.Header.Get("Content-Type"), resp.Body, nil)
+
+    ctx.JSON(http.StatusOK, resp)
 }
 
 func SubmitSubmission(ctx *gin.Context){
@@ -94,6 +96,8 @@ func SubmitSubmission(ctx *gin.Context){
         // completedTestCase := 0
         var mu sync.Mutex
         var stopProcessing bool
+        completedTestCase := 0
+        totaltestCase := len(content)
         // step2 each time make a call to compile with command
         for _ , curr := range content {
             wg.Add(1)
@@ -106,27 +110,13 @@ func SubmitSubmission(ctx *gin.Context){
                     return
                 }
                 mu.Unlock()
-                
-                output , err := utils.CompileCode(Body.Code , Body.Lang , curr.(map[string]interface{})["input"].(string))
+                var response utils.CompileResponse
+                response, err := utils.HandleCompile(Body.Code, curr.(map[string]interface{})["input"].(string), Body.Lang)
                 if err != nil {
                     errChan <- ErrChanResponse{
                         Status : 0 ,
                         Error : err ,
                     }
-                    return
-                }
-
-                var response CompileResponse
-                if err := json.Unmarshal(output, &response); err != nil || response.Error != "" {
-                    mu.Lock()
-                    if !stopProcessing {
-                        stopProcessing = true
-                        errChan <- ErrChanResponse{
-                            Status: 2,
-                            Error:  errors.New("compile Error"),
-                        }
-                    }
-                    mu.Unlock()
                     return
                 }
             
@@ -143,14 +133,14 @@ func SubmitSubmission(ctx *gin.Context){
                     return
                 }
 
-                // mu.Lock()
-                // if !stopProcessing {
-                //     completedTestCase++
-                //     progress := float64(completedTestCase) / float64(totaltestCase) * 100
-                //     inits.RedisClient.Set(ctx, "progress:"+transaction_id, 
-                //         strconv.FormatFloat(progress, 'f', 2, 64), time.Hour * 24)
-                // }
-                // mu.Unlock()
+                mu.Lock()
+                if !stopProcessing {
+                    completedTestCase++
+                    progress := float64(completedTestCase) / float64(totaltestCase) * 100
+                    inits.RedisClient.Set(ctx, "progress:"+transaction_id, 
+                        strconv.FormatFloat(progress, 'f', 2, 64), time.Hour * 24)
+                }
+                mu.Unlock()
             }(curr)
 
         }
@@ -311,7 +301,8 @@ func SystemTesting(ctx *gin.Context){
                         }
 
                         for _, curr := range testCases {
-                            output, err := utils.CompileCode(string(body), submission.Language, curr.(map[string]interface{})["input"].(string))
+                            var response utils.CompileResponse
+                            response, err := utils.HandleCompile(string(body), curr.(map[string]interface{})["input"].(string), submission.Language)
                             if err != nil {
                                 mu.Lock()
                                 if !stopProcessing {
@@ -322,17 +313,6 @@ func SystemTesting(ctx *gin.Context){
                                 mu.Unlock()
                                 return
                             }
-							var response CompileResponse
-							if err := json.Unmarshal(output, &response); err != nil{
-								mu.Lock()
-                                if !stopProcessing {
-                                    stopProcessing = true
-                                    errChan <- err
-                                    cancel()
-                                }
-                                mu.Unlock()
-                                return
-							}
 	
 							if utils.CleanString(response.Output.CodeOutput) != utils.CleanString(curr.(map[string]interface{})["output"].(string)) {
 								continue 
@@ -419,8 +399,8 @@ func SubmitSubmissionWithoutRedis(ctx *gin.Context) {
 
             input := tc.(map[string]interface{})["input"].(string)
             expected := tc.(map[string]interface{})["output"].(string)
-
-            outputBytes, err := utils.CompileCode(Body.Code, Body.Lang, input)
+            var response utils.CompileResponse
+            response , err := utils.HandleCompile(Body.Code, input, Body.Lang)
             if err != nil {
                 once.Do(func() {
                     CreateSubmission(Body.Lang, Body.StudentID, Body.QuestionID, models.CompilationError, Body.Code)
@@ -429,8 +409,8 @@ func SubmitSubmissionWithoutRedis(ctx *gin.Context) {
                 return
             }
 
-            var response CompileResponse
-            if err := json.Unmarshal(outputBytes, &response); err != nil || response.Error != "" {
+            
+            if response.Error != "" {
                 once.Do(func() {
                     CreateSubmission(Body.Lang, Body.StudentID, Body.QuestionID, models.CompilationError, Body.Code)
                     resultChan <- "Compilation Error"

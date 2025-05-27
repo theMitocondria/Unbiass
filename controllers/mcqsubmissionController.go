@@ -27,18 +27,18 @@ func MCQSubmissionCreation(studentID string , answers []answer , transaction_id 
     */
 
     var McqAnswers []models.McqAnswer
-    for _,answer := range answers {
+    for index,answer := range answers {
         McqAnswer := models.McqAnswer{
             Answer : answer.Answer ,
             StudentID : studentID ,
             QuestionID : answer.QuestionID ,
         }
         McqAnswers = append(McqAnswers,McqAnswer)
-        // progress := float64(index)/float64(len(McqAnswers)) * 100
+        progress := float64(index)/float64(len(McqAnswers)) * 100
 
-        // if int(progress) % 10 == 0 {
-        //     inits.RedisClient.Set(context.Background(),"progress:"+transaction_id,progress,0)
-        // }
+        if int(progress) % 10 == 0 {
+            inits.RedisClient.Set(context.Background(),"progress:"+transaction_id,progress,0)
+        }
     } 
 
     if err := database.DB.Model(&models.McqAnswer{}).Create(&McqAnswers).Error ; err != nil {
