@@ -4,17 +4,21 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-contrib/cors"
 	"github.com/theMitocondria/Unbiass/inits"
+	"github.com/theMitocondria/Unbiass/utils"
 	"github.com/theMitocondria/Unbiass/database"
 	"github.com/theMitocondria/Unbiass/controllers"
 	"github.com/theMitocondria/Unbiass/awsHandler"
 	"github.com/theMitocondria/Unbiass/middlewares"
+	"log"
+	"os"
 )
 
 func init(){
 	//used for loading envs in the code
-//	inits.LoadEnv()
+	inits.LoadEnv()
 	inits.InitHTTPClient()
-//	inits.Redis()
+	inits.Redis()
+	utils.CompilerInit()
 	database.DBInit()
 	awsHandler.InitializeAWS()
 	awsHandler.CreateBucket("unbiass")
@@ -24,7 +28,7 @@ func main(){
 
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173", "https://unbiass.com"}, // adjust for your frontend
+		AllowOrigins:     []string{"*"}, // Allow all origins 
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Authorization", "Content-Type"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -81,5 +85,12 @@ func main(){
 	//bugs and feedback
 	r.POST("/api/v1/feedback",controllers.CreateFeedback)
 	r.POST("/api/v1/bug",controllers.CreateBug)
-	r.Run()
+	
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "3000" // default port
+	}
+	log.Printf("Starting server on port %s", port)
+	
+	r.Run(":" + port)
 }

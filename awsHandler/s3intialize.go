@@ -24,7 +24,7 @@ func InitializeAWS() error {
 	if err != nil {
 		return fmt.Errorf("unable to load AWS credentials: %v", err)
 	}
-	fmt.Printf("✅ AWS credentials loaded: %s\n", val.AccessKeyID)
+	fmt.Printf("AWS credentials loaded: %s\n", val.AccessKeyID)
 
 
 	s3Client = s3.New(sess)
