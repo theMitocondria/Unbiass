@@ -142,21 +142,22 @@ func processJob(w *Worker, job Job) {
 
 func StartContainer(port int, lang string) error {
     StopContainer(port) 
-	image, err := GetImageName(lang)
-	if err != nil {
-		return err
-	}
+    image, err := GetImageName(lang)
+    if err != nil {
+        return err
+    }
 
-	cmd := exec.Command("docker", "run", "-d", "--rm",
-		"--name", fmt.Sprintf("compiler-%d", port),
-		"-p", fmt.Sprintf("%d:8080", port),
-		image)
+    cmd := exec.Command("docker", "run", "-d", "--rm",
+        "--name", fmt.Sprintf("compiler-%d", port),
+        "--network", "host", // Add host networking
+        image)
 
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to start container: %w", err)
-	}
+    output, err := cmd.CombinedOutput() // Capture output for debugging
+    if err != nil {
+        return fmt.Errorf("failed to start container: %w, output: %s", err, string(output))
+    }
 
-	return waitForContainerReady(port, 10*time.Second)
+    return waitForContainerReady(port, 10*time.Second)
 }
 
 func StopContainer(port int) error {
@@ -174,17 +175,24 @@ func StopContainer(port int) error {
 }
 
 func waitForContainerReady(port int, timeout time.Duration) error {
-	deadline := time.Now().Add(timeout)
-	client := http.Client{Timeout: 1 * time.Second}
+    deadline := time.Now().Add(timeout)
+    client := http.Client{Timeout: 1 * time.Second}
 
-	for time.Now().Before(deadline) {
-		resp, err := client.Get(fmt.Sprintf("http://localhost:%d/health", port))
-		if err == nil && resp.StatusCode < 500 {
-			return nil
-		}
-		time.Sleep(300 * time.Millisecond)
-	}
-	return fmt.Errorf("container on port %d not ready", port)
+    for time.Now().Before(deadline) {
+        resp, err := client.Get(fmt.Sprintf("http://localhost:%d/health", port))
+        if err != nil {
+            fmt.Printf("Health check error: %v\n", err) // Add debug logging
+            time.Sleep(300 * time.Millisecond)
+            continue
+        }
+        if resp.StatusCode < 500 {
+            resp.Body.Close()
+            return nil
+        }
+        resp.Body.Close()
+        time.Sleep(300 * time.Millisecond)
+    }
+    return fmt.Errorf("container on port %d not ready after %v", port, timeout)
 }
 
 func CompileCode(code, input, lang string, port int, client *http.Client) (CompileResponse, error) {

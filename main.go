@@ -9,6 +9,8 @@ import (
 	"github.com/theMitocondria/Unbiass/controllers"
 	"github.com/theMitocondria/Unbiass/awsHandler"
 	"github.com/theMitocondria/Unbiass/middlewares"
+	"log"
+	"os"
 )
 
 func init(){
@@ -83,5 +85,12 @@ func main(){
 	//bugs and feedback
 	r.POST("/api/v1/feedback",controllers.CreateFeedback)
 	r.POST("/api/v1/bug",controllers.CreateBug)
-	r.Run()
+	
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "3000" // default port
+	}
+	log.Printf("Starting server on port %s", port)
+	
+	r.Run(":" + port)
 }

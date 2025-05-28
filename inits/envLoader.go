@@ -2,11 +2,11 @@ package inits
 
 import (
 	"github.com/joho/godotenv"
-	"log"
 )
 
-func LoadEnv(){
-	if err := godotenv.Load() ; err != nil {
-        log.Fatal(err)
+func LoadEnv() error {
+	if err := godotenv.Load(); err != nil {
+		return err
     }
+	return nil
 }
