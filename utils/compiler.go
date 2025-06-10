@@ -148,9 +148,7 @@ func StartContainer(port int, lang string) error {
     }
 
     cmd := exec.Command("docker", "run", "-d", "--rm",
-        "--name", fmt.Sprintf("compiler-%d", port),
-        "--network", "host", // Add host networking
-        image)
+        "--name", fmt.Sprintf("compiler-%d", port), "-p", fmt.Sprintf("%d:8080", port), image)
 
     output, err := cmd.CombinedOutput() // Capture output for debugging
     if err != nil {
