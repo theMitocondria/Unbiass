@@ -30,13 +30,15 @@ func CompileSubmission(ctx *gin.Context) {
     var body struct {
         Code string `json:"code" binding:"required"`
         Lang string `json:"lang" binding:"required"`
-        Input string `json:"input" binding:"required"`
+        Input string `json:"input" `
     }
 
     if err := ctx.ShouldBindJSON(&body); err != nil {
         ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
         return
     }
+
+    fmt.Println(body)
 
     resp , err := utils.HandleCompile(body.Code , body.Input , body.Lang)
     if err != nil {

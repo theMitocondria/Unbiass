@@ -1,25 +1,36 @@
 package main
 
 import (
-	"github.com/theMitocondria/Unbiass/inits" 
-	"github.com/theMitocondria/Unbiass/models"
+	"log"
+
 	"github.com/theMitocondria/Unbiass/database"
+	"github.com/theMitocondria/Unbiass/models"
 )
 
-func init(){
-	database.DBInit()
-}
+func main() {
+	db, err := database.InitDB()
+	if err != nil {
+		log.Fatalf("DB init failed: %v", err)
+	}
 
-func main(){
-	database.DB.AutoMigrate(&models.Company{})
-	database.DB.AutoMigrate(&models.Question{})
-	database.DB.AutoMigrate(&models.Contest{})
-	database.DB.AutoMigrate(&models.McqAnswer{})
-	database.DB.AutoMigrate(&models.Submission{})
-	database.DB.AutoMigrate(&models.Student{})
-	database.DB.AutoMigrate(&models.Testcase{})
-	database.DB.AutoMigrate(&models.RankedStudent{})
-	database.DB.AutoMigrate(&models.Developer{})
-	database.DB.AutoMigrate(&models.Feedback{})
-	database.DB.AutoMigrate(&models.Bug{})
+	log.Println("Running migrations...")
+	err = db.AutoMigrate(
+		&models.Company{},
+		&models.Question{},
+		&models.Contest{},
+		&models.McqAnswer{},
+		&models.Submission{},
+		&models.Student{},
+		&models.Testcase{},
+		&models.RankedStudent{},
+		&models.Developer{},
+		&models.Feedback{},
+		&models.Bug{},
+	)
+
+	if err != nil {
+		log.Fatalf("Migration failed: %v", err)
+	}
+
+	log.Println("Migrations complete ✅")
 }

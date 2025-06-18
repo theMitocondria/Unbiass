@@ -13,7 +13,10 @@ import (
 	"os"
 	"github.com/golang-jwt/jwt/v5"
 )
-
+type slimQuestion struct {
+	ID       string `gorm:"column:id"`
+	McqOrCode string `gorm:"column:mcq_or_code"`
+}
 type result struct {
 	StartTime time.Time `gorm:"column:start_time"`
 	ContestName string `gorm:"column:contest_name"`
@@ -174,10 +177,75 @@ func AuthStudentInfo(ctx *gin.Context){
 	// if err := database.DB.Model(&models.Student{}).Where("id=?",student.ID).Update("has_logged_in_once",true).Error; err != nil {
 	// 	ctx.JSON(http.StatusInternalServerError,gin.H{"error":err.Error()})
 	// 	return
-	// }
-	ctx.SetCookie("Authorization", "Bearer "+ student.Token, 60*120, "/", "", false, true)  // for 2 hours 
-	ctx.JSON(http.StatusOK , gin.H{
-		"message":student.ContestID,
+	// }// now check if the conntest has started and not ended yet , then fetch questions from the contest in a sequence first all mcq then all coding questions
+	var contest models.Contest
+	if err := database.DB.Model(&models.Contest{}).Select("start_time, end_time , duration").Where("id=?", student.ContestID).First(&contest).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("error in searching the contests %s" , err.Error())})
+		return
+	}
+
+	if time.Now().Before(contest.StartTime) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Contest has not started yet"})
+		return
+	}
+	if time.Now().After(contest.EndTime) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Contest has already ended"})
+		return
+	}
+
+	var questions []slimQuestion 
+	if err := database.DB.Model(&models.Question{}).Select("id" , "mcq_or_code").Where("contest_id=?", student.ContestID).Order("mcq_or_code DESC").Find(&questions).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("error in searching the questions %s" , err.Error())})
+		return
+	}
+
+	// now make a object with two arrays one for code and second fro mcq and this araays will contain id only
+	var question models.Question
+	var testcase []interface{}
+	var questionIDS []string
+	
+	if questions[0].McqOrCode == "M" {
+		if err := database.DB.Model(&models.Question{}).Select("id", "name", "description", "time" , "mcq_options","mcq_or_code").Where("id=?", questions[0].ID).First(&question).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("error in searching the questions %s" , err.Error())})
+			return
+		}
+	} else {
+		if err := database.DB.Model(&models.Question{}).Select("id", "name", "description", "time","mcq_or_code").Where("id=?", questions[0].ID).First(&question).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("error in searching the questions %s" , err.Error())})
+			return
+		}
+		// GetTestcaseData is function is used to get the testcases for the code question
+		test , err := GetTestcaseData("g" , question.ID)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("error in getting the testcases %s" , err.Error())})
+			return
+		}
+		testcase = test
+	}
+
+	
+	for _, q := range questions {
+		questionIDS = append(questionIDS, q.ID)
+	}
+
+	
+	// update the student to has_logged_in_once true
+	if err := database.DB.Model(&models.Student{}).Where("id=?", student.ID).Update("has_logged_in_once", true).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("error in updating the student %s" , err.Error())})
+		return
+	}
+	// Set the cookie for authorization
+	ctx.SetCookie("Authorization", "Bearer "+ student.Token, int(60*int(contest.EndTime.Sub(time.Now()).Minutes())), "/", "", false, true)  // for 2 hours
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": gin.H{
+			"questionIds": questionIDS,
+			"question": question,
+			"testcase": testcase,
+			"contestID": student.ContestID,
+			"contestStartTime": contest.StartTime,
+			"contestEndTime": contest.EndTime,
+			"remainingMinutes": int(contest.EndTime.Sub(time.Now()).Minutes()),
+		},
 	})
 }
 

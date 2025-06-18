@@ -139,10 +139,50 @@ func GetQuestionsByPaginatedFilters(ctx *gin.Context){
 	if filters.Limit != 0 {
 		query = query.Limit(filters.Limit)
 	}
+	type QuestionWithTestcase struct {
+		ID               string         `json:"id"`
+		Name            string         `json:"name"`
+		Description     string         `json:"description"`
+		MCQ_OR_Code     string         `json:"mcq_or_code"`
+		Tags            pq.StringArray `json:"tags"`
+		Difficulty_rating uint32        `json:"difficulty_rating"`
+		Language        string         `json:"language"`
+		MCQ_Options     pq.StringArray `json:"mcq_options"`
+		ContestID       string         `json:"contest_id"`
+		Testcases       []interface{} `json:"testcases,omitempty"`
+	}
 
 	var questions []models.Question
+	var result []QuestionWithTestcase
+
 	query.Find(&questions)
-	ctx.JSON(http.StatusOK, gin.H{"message": questions})
+
+	for _, q := range questions {
+		qWithTest := QuestionWithTestcase{
+			ID:               q.ID,
+			Name:            q.Name,
+			Description:     q.Description,
+			MCQ_OR_Code:     q.MCQ_OR_Code,
+			Tags:            q.Tags,
+			Difficulty_rating: q.Difficulty_rating,
+			Language:        q.Language,
+			MCQ_Options:     q.MCQ_Options,
+			ContestID:       q.ContestID,
+		}
+		
+		if q.MCQ_OR_Code == "C" {
+			testcases, err := GetTestcaseData("g", q.ID)
+			if err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("error in getting the testcases %s", err.Error())})
+				return
+			}
+			qWithTest.Testcases = testcases
+		}
+		result = append(result, qWithTest)
+	}
+
+
+	ctx.JSON(http.StatusOK, gin.H{"message": result})
 }
 
 func DeleteQuestionByContestID(ctx *gin.Context){
