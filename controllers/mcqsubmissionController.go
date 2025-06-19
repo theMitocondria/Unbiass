@@ -19,34 +19,7 @@ type answer struct {
     QuestionID string
 }
 
-func MCQSubmissionCreation(studentID string , answers []answer , transaction_id string) error {
-	/*
-        student ID ek single hogi , answers array h jisme question ID or given option hoga : steps :
-            1. student id  => saare answers or options wale objects bna or sabko ek saath create krdio
-            2. then create krna
-    */
 
-    var McqAnswers []models.McqAnswer
-    for index,answer := range answers {
-        McqAnswer := models.McqAnswer{
-            Answer : answer.Answer ,
-            StudentID : studentID ,
-            QuestionID : answer.QuestionID ,
-        }
-        McqAnswers = append(McqAnswers,McqAnswer)
-        progress := float64(index)/float64(len(McqAnswers)) * 100
-
-        if int(progress) % 10 == 0 {
-            inits.RedisClient.Set(context.Background(),"progress:"+transaction_id,progress,0)
-        }
-    } 
-
-    if err := database.DB.Model(&models.McqAnswer{}).Create(&McqAnswers).Error ; err != nil {
-        return err
-    }
-
-    return nil 
-}
 
 func MCQSubmissionTesting(ctx *gin.Context){
     
@@ -165,5 +138,37 @@ func MCQSubmissionTesting(ctx *gin.Context){
             return
         }
     }()
+}
+
+// new functions
+func SubmitMCQ(ctx *gin.Context){
+    //post request lgegi with choosen options , studentid , answers
+    var body struct {
+        Answer string `json:"answer" binding:"required"`
+        StudentID string `json:"student_id" binding:"required"`
+        QuestionID string `json:"question_id" binding:"required"`
+    }
+
+    if err := ctx.ShouldBindJSON(&body) ; err != nil {
+		ctx.JSON(http.StatusBadRequest , gin.H{"error":err.Error()})
+		return
+	}
+
+    McqAnswer := models.McqAnswer{
+        Answer : body.Answer ,
+        StudentID : body.StudentID ,
+        QuestionID : body.QuestionID ,
+    }
+
+    if err := database.DB.Model(&models.McqAnswer{}).Create(&McqAnswer).Error ; err != nil {
+        ctx.JSON(http.StatusInternalServerError , gin.H{
+            "error":err.Error(),
+        })
+        return 
+    }
+
+    ctx.JSON(http.StatusOK , gin.H{
+        "messsage":"Submitted",
+    })
 }
 

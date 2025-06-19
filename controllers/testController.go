@@ -103,11 +103,6 @@ func EndTestWithRedis(ctx *gin.Context){
 			//student ko delete krdo
 			return	
 		}
-
-		//ab hume uske mcqs ko creation ke liye bhjna h
-		if err := MCQSubmissionCreation(body.StudentID , body.Answers , transaction_id) ; err != nil {
-			inits.RedisClient.Set(context.Background(),"progress:"+transaction_id,fmt.Sprintf("Error %v",err.Error()),time.Hour*24)
-		}
 	}()	
 }
 
@@ -155,12 +150,6 @@ func EndTest(ctx *gin.Context){
 			database.DB.Model(&models.Submission{}).Delete(sub.ID)
 		}
 		ctx.JSON(http.StatusOK, gin.H{"message": "Test ended - Unfair attempt detected"})
-		return
-	}
-
-	//ab hume uske mcqs ko creation ke liye bhjna h
-	if err := MCQSubmissionCreation(body.StudentID, body.Answers, ""); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 

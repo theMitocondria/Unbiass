@@ -19,7 +19,7 @@ func init(){
 	inits.InitHTTPClient()
 	inits.Redis()
 	utils.CompilerInit()
-	database.DBInit()
+	database.InitDB()
 	awsHandler.InitializeAWS()
 	awsHandler.CreateBucket("unbiass")
 	awsHandler.InitializeSESService()
@@ -28,7 +28,7 @@ func main(){
 
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"}, // Allow all origins 
+		AllowOrigins:     []string{"http://localhost:5173", "http://localhost:4173", "https://app.unbiass.com" , "https://front.unbiass.com"},  
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Authorization", "Content-Type"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -75,6 +75,7 @@ func main(){
 	r.POST("/api/v1/submissions/plag/:contestid" ,middlewares.AuthAdmin, controllers.PlagTesting)
 	r.GET("/api/v1/submissions/students/:studentid/questions/:questionid",controllers.GetSubmissionsBYQuestionIDAndStudentID)
 	r.GET("/api/v1/submissions/:submissionid",controllers.GetSubmissionCodeByID)
+	r.POST("/api/v1/mcq" , controllers.SubmitMCQ )
 	//miscellaneous
 	r.POST("/api/v1/end",controllers.EndTest)
 	r.POST("/api/v1/create-template",controllers.CreateTemplate)

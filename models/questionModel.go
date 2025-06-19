@@ -18,6 +18,7 @@ type Question struct {
 	Language 			string			`gorm:"size:50" json:"language"`
 	// if mcq then only here 4-5 options whatever and last option for answer of that (4 options , 5 one answer)
 	MCQ_Options			pq.StringArray	`gorm:"type:text[]" json:"options"`
+	Time 				uint32			`gorm:"not null;default:0" json:"time"` // in seconds 
 	ContestID 			string			`gorm:"index"  json:"contest_id"`
 } 	
 
